@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meridian Courier — Island Flight Game</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0b1622;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #eef1f5; }
+  #app { position: fixed; inset: 0; }
+  #app canvas { display: block; }
+  .hidden { display: none !important; }
+  #status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+  /* ---- HUD ---- */
+  #hud { position: fixed; inset: 0; pointer-events: none; display: none; z-index: 5; }
+  .hud-box { background: rgba(8, 14, 24, 0.72); border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 8px; padding: 8px 12px; }
+  #hud-top { position: absolute; top: 12px; left: 12px; display: flex; gap: 10px; }
+  .hud-num { text-align: center; min-width: 92px; }
+  .hud-num .label { font-size: 10px; letter-spacing: 2px; color: #8b93a3; }
+  .hud-num .value { font-size: 24px; font-weight: 700; color: #fff; font-variant-numeric: tabular-nums; }
+  #hud-compass { position: absolute; top: 76px; left: 50%; transform: translateX(-50%);
+    width: 340px; height: 48px; border-radius: 8px; }
+  #hud-right { position: absolute; top: 12px; right: 12px; text-align: right; }
+  #hud-timer { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #hud-score { font-size: 14px; color: #ffc21c; font-weight: 700; }
+  #hud-objective { position: absolute; top: 132px; left: 50%; transform: translateX(-50%);
+    font-size: 15px; font-weight: 600; background: rgba(8,14,24,0.72); border: 1px solid rgba(255,194,28,0.5);
+    border-radius: 20px; padding: 6px 16px; white-space: nowrap; }
+  #hud-message { position: absolute; top: 178px; left: 50%; transform: translateX(-50%);
+    font-size: 18px; font-weight: 700; color: #37d67a; text-shadow: 0 1px 4px #000;
+    transition: opacity 0.4s; white-space: nowrap; }
+  #hud-warning { position: absolute; top: 214px; left: 50%; transform: translateX(-50%);
+    font-size: 17px; font-weight: 800; color: #ff534b; background: rgba(8,14,24,0.8);
+    border: 1px solid #ff534b; border-radius: 8px; padding: 6px 14px; display: none; }
+  #hud-left-bottom { position: absolute; left: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; width: 240px;
+    background: rgba(8, 14, 24, 0.72); border: 1px solid rgba(255,255,255,0.18); border-radius: 8px; padding: 8px 12px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .bar-row .bar-label { font-size: 11px; letter-spacing: 1px; width: 74px; color: #c8cdd6; }
+  .bar { flex: 1; height: 12px; background: rgba(255,255,255,0.15); border-radius: 6px; overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 6px; transition: width 0.2s; }
+  #hud-fuel-fill { background: #37d67a; }
+  #hud-thr-fill { background: #e86a1c; }
+  #hud-horizon { position: absolute; right: 12px; bottom: 12px; width: 110px; height: 110px;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,0.4); background: rgba(8,14,24,0.5); }
+  #hud-gauges { position: absolute; left: 50%; bottom: 12px; transform: translateX(-50%);
+    width: 524px; height: 96px; display: none; }
+  #hud-keys { position: absolute; right: 12px; bottom: 136px; font-size: 11px; color: #c8cdd6;
+    background: rgba(8,14,24,0.6); border-radius: 6px; padding: 6px 9px; line-height: 1.6; }
+
+  /* ---- Panels ---- */
+  .panel { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(5, 10, 18, 0.55); z-index: 10; }
+  .panel-card { background: rgba(10, 20, 32, 0.94); border: 1px solid rgba(255,255,255,0.16);
+    border-radius: 14px; padding: 28px 32px; max-width: 640px; width: min(92vw, 640px);
+    box-shadow: 0 12px 48px rgba(0,0,0,0.6); max-height: 88vh; overflow-y: auto; }
+  .panel-card h1 { margin: 0 0 4px; font-size: 34px; }
+  .panel-card h1 .accent { color: #ffc21c; }
+  .panel-card .sub { color: #ffc21c; font-weight: 600; margin: 0 0 16px; }
+  .panel-card p { color: #c8cdd6; line-height: 1.55; margin: 8px 0; }
+  #mission-list { display: flex; flex-direction: column; gap: 10px; margin: 16px 0; }
+  .mission-card { display: flex; flex-direction: column; gap: 3px; text-align: left; cursor: pointer;
+    background: #16283c; border: 1px solid #2c4a68; border-radius: 10px; padding: 12px 16px; color: #eef1f5; }
+  .mission-card:hover, .mission-card:focus-visible { border-color: #ffc21c; background: #1d3450; outline: none; }
+  .mission-name { font-size: 19px; font-weight: 700; }
+  .mission-tag { font-size: 14px; color: #c8cdd6; }
+  .mission-meta { font-size: 12px; color: #8b93a3; }
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+  button.btn { cursor: pointer; background: #e86a1c; color: #fff; border: none; border-radius: 8px;
+    padding: 11px 20px; font-size: 15px; font-weight: 700; }
+  button.btn:hover { background: #f07d33; }
+  button.btn.secondary { background: #2c4a68; }
+  button.btn.secondary:hover { background: #3a5f86; }
+  #menu-best { color: #8b93a3; font-size: 13px; }
+  .controls-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-size: 14px;
+    color: #c8cdd6; margin: 12px 0; }
+  .controls-grid b { color: #fff; font-weight: 600; }
+  #end-panel.side-panel { justify-content: flex-start; padding-left: 5vw; }
+  #end-panel.side-panel .panel-card { width: min(88vw, 470px); }
+  #end-lines div { color: #c8cdd6; line-height: 1.6; }
+  #end-score { font-size: 22px; font-weight: 800; color: #ffc21c; margin-top: 12px; }
+  #btn-mute { position: fixed; right: 12px; top: 112px; transform: none; z-index: 6;
+    background: rgba(8,14,24,0.72); color: #eef1f5; border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 8px; padding: 8px 10px; cursor: pointer; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<p id="status" role="status" aria-live="polite"></p>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="hud-top">
+    <div class="hud-box hud-num"><div class="label">ALTITUDE</div><div class="value" id="hud-alt">0 FT</div></div>
+    <div class="hud-box hud-num"><div class="label">AIRSPEED</div><div class="value" id="hud-spd">0 KT</div></div>
+    <div class="hud-box hud-num"><div class="label">HEADING</div><div class="value" id="hud-hdg">090°</div></div>
+    <div class="hud-box hud-num"><div class="label">VERT SPEED</div><div class="value" id="hud-vs">+0 FPM</div></div>
+  </div>
+  <canvas id="hud-compass" width="340" height="48"></canvas>
+  <div id="hud-right" class="hud-box">
+    <div id="hud-timer">5:00</div>
+    <div id="hud-score">SCORE 0</div>
+  </div>
+  <div id="hud-objective"></div>
+  <div id="hud-message"></div>
+  <div id="hud-warning"></div>
+  <div id="hud-left-bottom">
+    <div class="bar-row"><span class="bar-label" id="hud-fuel-text">FUEL 100%</span><div class="bar"><div id="hud-fuel-fill" style="width:100%"></div></div></div>
+    <div class="bar-row"><span class="bar-label">THROTTLE</span><div class="bar"><div id="hud-thr-fill" style="width:0%"></div></div></div>
+  </div>
+  <canvas id="hud-horizon" width="110" height="110"></canvas>
+  <canvas id="hud-gauges" width="524" height="96"></canvas>
+  <div id="hud-keys">↑↓ pitch · ←→ bank · Shift/Ctrl throttle<br>C camera · P pause · R restart · M mute</div>
+</div>
+<button id="btn-mute" type="button">🔊 Sound on</button>
+
+<!-- Menu -->
+<div id="menu" class="panel">
+  <div class="panel-card">
+    <h1>✈ Meridian <span class="accent">Courier</span></h1>
+    <p class="sub">Island-hopping cargo flights in a little prop plane</p>
+    <p>You are the courier pilot of the Meridian Isles. Take off from the runway, thread the glowing rings, deliver the cargo and put her down gently on the next airstrip — before the fuel runs out. Bank too hard and you bleed speed; fly too slow and the wing stalls.</p>
+    <div id="mission-list"></div>
+    <div class="controls-grid">
+      <b>↑ / ↓ or W / S</b><span>Pitch nose down / up</span>
+      <b>← / → or A / D</b><span>Bank left / right to turn</span>
+      <b>Shift / Ctrl (or E / Q)</b><span>Throttle up / down</span>
+      <b>C</b><span>Chase camera / cockpit camera</span>
+      <b>Mouse drag</b><span>Look around</span>
+      <b>P · R · M</b><span>Pause · Restart · Mute</span>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="btn-help" type="button">How to fly</button>
+    </div>
+    <p id="menu-best"></p>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="help-panel" class="panel hidden">
+  <div class="panel-card">
+    <h1>How to fly</h1>
+    <p><b>Take off:</b> hold Shift to spool the throttle to full, then pull back (↓ or S) once you pass 60 kt. The wheels leave the runway around 30 m/s.</p>
+    <p><b>Turns:</b> bank with ← → — the plane turns toward the low wing. Level the wings to fly straight. A steep bank at low speed is a stall waiting to happen.</p>
+    <p><b>Rings:</b> fly through the glowing hoop. The gold beacon pillar marks your next objective from anywhere in the sky.</p>
+    <p><b>Landing:</b> slow below 100 kt, line up with the runway, descend gently (under 800 ft/min) and touch down wings-level. A hard landing damages the airframe; a very hard one ends the sortie.</p>
+    <p><b>Fuel &amp; damage:</b> full throttle burns fuel fast. Empty tanks mean a glide — pick a runway. Deliveries refuel you by 25%.</p>
+    <div class="btn-row"><button class="btn" id="btn-help-close" type="button">Back</button></div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div id="pause-panel" class="panel hidden">
+  <div class="panel-card">
+    <h1>Paused</h1>
+    <p>The courier waits. The wind does not.</p>
+    <div class="btn-row">
+      <button class="btn" id="btn-resume" type="button">Resume (P)</button>
+      <button class="btn secondary" id="btn-pause-restart" type="button">Restart sortie</button>
+      <button class="btn secondary" id="btn-pause-menu" type="button">Main menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- End -->
+<div id="end-panel" class="panel hidden">
+  <div class="panel-card">
+    <h1 id="end-title">Mission Complete</h1>
+    <div id="end-lines"></div>
+    <div id="end-score"></div>
+    <div class="btn-row">
+      <button class="btn" id="btn-again" type="button">Fly again (R)</button>
+      <button class="btn secondary" id="btn-end-menu" type="button">Main menu</button>
+    </div>
+  </div>
+</div>
+
+<script src="./vendor/three.min.js"></script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
