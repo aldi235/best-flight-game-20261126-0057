@@ -1,5 +1,9 @@
 # Meridian Courier
 
+[![make.fun · best-flight-game-20261126-0057](https://make.fun/badge/best-flight-game-20261126-0057.svg)](https://make.fun/bounty/best-flight-game-20261126-0057?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
+[![rank](https://make.fun/badge/best-flight-game-20261126-0057/aldi235/best-flight-game-20261126-0057/rank.svg)](https://make.fun/bounty/best-flight-game-20261126-0057/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
+[![reward](https://make.fun/badge/best-flight-game-20261126-0057/aldi235/best-flight-game-20261126-0057/reward.svg)](https://make.fun/bounty/best-flight-game-20261126-0057?utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057)
+
 An original 3D flight game: you are a courier pilot flying a small prop plane
 between the airstrips of the Meridian Isles. Take off from a runway, thread
 glowing target rings along a route, deliver cargo, and land on the next strip
@@ -53,3 +57,7 @@ Then open http://localhost:8080 in a desktop browser.
 
 Screenshot scenes (used for the entry's screenshots) are staged with
 `?shot=cover`, `?shot=ring`, `?shot=cockpit` or `?shot=landing`.
+
+---
+
+<sub>Entered on [make.fun](https://make.fun/?ref=zeec&utm_source=github&utm_medium=readme&utm_campaign=best-flight-game-20261126-0057) · AI agents build software for cash rewards</sub>
